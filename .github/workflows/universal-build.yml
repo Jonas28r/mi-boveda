@@ -1,32 +1,34 @@
 name: Build Universal Aethelos (Selección de Proyecto)
 
 on:
-  # Esto activa el formulario manual en la pestaña Actions de GitHub
   workflow_dispatch:
     inputs:
       project_folder:
-        description: 'Nombre de la carpeta a compilar (ej: aethelos-cambio)'
+        description: 'Carpeta exacta del proyecto (ej: aethelos-cambio)'
         required: true
         default: 'aethelos-cambio'
       app_name:
-        description: 'Nombre real de la App'
+        description: 'Nombre visual de la App (ej: Aethelos Cambio)'
         required: true
         default: 'Aethelos Cambio'
+      app_id:
+        description: 'ID de Android SIN GUIONES (ej: com.aethelos.cambio)'
+        required: true
+        default: 'com.aethelos.cambio'
 
 jobs:
   build:
-    name: Compilar APK Ligera
+    name: Compilar APK Profesional
     runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Clonar el Repositorio
         uses: actions/checkout@v4
 
-      - name: ⚙️ Configurar Node.js (Sin Caché Estricto)
+      - name: ⚙️ Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # Eliminado por completo el 'cache: npm' para evitar el error de la captura
 
       - name: ☕ Configurar Java para Android
         uses: actions/setup-java@v3
@@ -34,29 +36,28 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 🛠️ Armar Estructura de la App en Caliente
+      - name: 🛠️ Construir Entorno e Inyectar Código Puro
         run: |
-          # 1. Crear entorno mínimo de ejecución en el aire
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          
-          # 2. Inicializar Capacitor apuntando ÚNICAMENTE a la carpeta elegida
-          npx cap init "${{ github.event.inputs.app_name }}" "com.aethelos.${{ github.event.inputs.project_folder }}" --web-dir=${{ github.event.inputs.project_folder }}
-          
-          # 3. Crear el proyecto contenedor de Android
+          npx cap init "${{ github.event.inputs.app_name }}" "${{ github.event.inputs.app_id }}" --web-dir="${{ github.event.inputs.project_folder }}"
           npx cap add android
+          chmod +x android/gradlew
           npx cap sync android
 
-      - name: 🚀 Compilar con Gradle
+      - name: 🚀 Compilar APK con Gradle
         working-directory: ./android
         run: ./gradlew assembleDebug
 
-      - name: 🏷️ Renombrar APK al Nombre del Proyecto
+      - name: 🏷️ Renombrar APK a Nombre de Confianza
         run: |
-          mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/${{ github.event.inputs.project_folder }}.apk
+          # Convierte el nombre (ej: "Aethelos Cambio" pasa a ser "Aethelos-Cambio")
+          CLEAN_NAME=$(echo "${{ github.event.inputs.app_name }}" | sed 's/ /-/g')
+          mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/$CLEAN_NAME.apk
+          echo "APK_FILENAME=$CLEAN_NAME" >> $GITHUB_ENV
 
-      - name: 📤 Exportar ZIP con el APK Limpio
+      - name: 📤 Exportar ZIP con tu APK Listo
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.inputs.project_folder }}-APK-Descarga
-          path: android/app/build/outputs/apk/debug/${{ github.event.inputs.project_folder }}.apk
+          name: ${{ env.APK_FILENAME }}-Instalador
+          path: android/app/build/outputs/apk/debug/${{ env.APK_FILENAME }}.apk
