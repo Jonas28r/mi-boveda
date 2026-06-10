@@ -38,7 +38,7 @@ jobs:
 
       - name: 🛠️ Construir Entorno e Inyectar Código Puro
         run: |
-          # 1. Detectar la carpeta real ignorando mayúsculas/minúsculas del teléfono
+          # 1. Detectar la carpeta real ignorando mayúsculas/minúsculas
           TARGET_FOLDER=$(find . -maxdepth 1 -iname "${{ github.event.inputs.project_folder }}" -type d | head -n 1 | sed 's|^\./||')
           
           if [ -z "$TARGET_FOLDER" ]; then
@@ -46,13 +46,15 @@ jobs:
             exit 1
           fi
           
-          # 2. Verificar el index.html sin importar si está escrito como Index.html o index.html
+          # 2. Verificar el index.html de forma segura
           INDEX_FILE=$(find "$TARGET_FOLDER" -maxdepth 1 -iname "index.html" -type f | head -n 1)
           if [ -z "$INDEX_FILE" ]; then
             echo "❌ ERROR: No hay ningún archivo index.html dentro de la carpeta '$TARGET_FOLDER'."
             exit 1
-          else
-            # Forzar minúsculas en el nombre del archivo para que Capacitor no falle
+          fi
+          
+          # SOLUCIÓN AL ERROR: Solo renombra si el nombre no es idéntico al destino
+          if [ "$INDEX_FILE" != "$TARGET_FOLDER/index.html" ]; then
             mv "$INDEX_FILE" "$TARGET_FOLDER/index.html"
           fi
 
@@ -60,11 +62,14 @@ jobs:
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # 4. Vincular el proyecto usando la carpeta real localizada
+          # 4. Vincular el proyecto
           npx cap init "${{ github.event.inputs.app_name }}" "${{ github.event.inputs.app_id }}" --web-dir="$TARGET_FOLDER"
           npx cap add android
           chmod +x android/gradlew
           npx cap sync android
+
+          # Mensaje de éxito para el log
+          echo "✅ Entorno web verificado y listo para compilar."
 
       - name: 🚀 Compilar APK con Gradle
         working-directory: ./android
