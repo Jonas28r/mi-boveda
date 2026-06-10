@@ -1,9 +1,7 @@
 name: Build APK
 
 on:
-  push:
-    branches:
-      - main  # Asegúrate de que coincida con el nombre de tu rama principal (a veces es 'master')
+  workflow_dispatch: # Ahora solo se activará cuando tú presiones el botón en GitHub
 
 jobs:
   build:
@@ -28,4 +26,3 @@ jobs:
         run: eas build --platform android --profile preview --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
