@@ -38,9 +38,30 @@ jobs:
 
       - name: 🛠️ Construir Entorno e Inyectar Código Puro
         run: |
+          # 1. Detectar la carpeta real ignorando mayúsculas/minúsculas del teléfono
+          TARGET_FOLDER=$(find . -maxdepth 1 -iname "${{ github.event.inputs.project_folder }}" -type d | head -n 1 | sed 's|^\./||')
+          
+          if [ -z "$TARGET_FOLDER" ]; then
+            echo "❌ ERROR: No se encontró la carpeta '${{ github.event.inputs.project_folder }}' en tu repositorio."
+            exit 1
+          fi
+          
+          # 2. Verificar el index.html sin importar si está escrito como Index.html o index.html
+          INDEX_FILE=$(find "$TARGET_FOLDER" -maxdepth 1 -iname "index.html" -type f | head -n 1)
+          if [ -z "$INDEX_FILE" ]; then
+            echo "❌ ERROR: No hay ningún archivo index.html dentro de la carpeta '$TARGET_FOLDER'."
+            exit 1
+          else
+            # Forzar minúsculas en el nombre del archivo para que Capacitor no falle
+            mv "$INDEX_FILE" "$TARGET_FOLDER/index.html"
+          fi
+
+          # 3. Inicializar herramientas nativas
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "${{ github.event.inputs.app_name }}" "${{ github.event.inputs.app_id }}" --web-dir="${{ github.event.inputs.project_folder }}"
+          
+          # 4. Vincular el proyecto usando la carpeta real localizada
+          npx cap init "${{ github.event.inputs.app_name }}" "${{ github.event.inputs.app_id }}" --web-dir="$TARGET_FOLDER"
           npx cap add android
           chmod +x android/gradlew
           npx cap sync android
@@ -51,7 +72,6 @@ jobs:
 
       - name: 🏷️ Renombrar APK a Nombre de Confianza
         run: |
-          # Convierte el nombre (ej: "Aethelos Cambio" pasa a ser "Aethelos-Cambio")
           CLEAN_NAME=$(echo "${{ github.event.inputs.app_name }}" | sed 's/ /-/g')
           mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/$CLEAN_NAME.apk
           echo "APK_FILENAME=$CLEAN_NAME" >> $GITHUB_ENV
