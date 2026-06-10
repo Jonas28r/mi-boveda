@@ -5,31 +5,28 @@ on:
   workflow_dispatch:
     inputs:
       project_folder:
-        description: 'Carpeta del proyecto a compilar (ej: aethelos-cambio)'
+        description: 'Nombre de la carpeta a compilar (ej: aethelos-cambio)'
         required: true
         default: 'aethelos-cambio'
       app_name:
-        description: 'Nombre de la App (ej: Aethelos Cambio)'
+        description: 'Nombre real de la App'
         required: true
         default: 'Aethelos Cambio'
-      app_id:
-        description: 'ID de la App (ej: com.aethelos.cambio)'
-        required: true
-        default: 'com.aethelos.cambio'
 
 jobs:
-  build-ligero:
-    name: Build Pure Web & Lightweight APK
+  build:
+    name: Compilar APK Ligera
     runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Clonar el Repositorio
         uses: actions/checkout@v4
 
-      - name: ⚙️ Configurar Node.js
-        uses:4 actions/setup-node@v4
+      - name: ⚙️ Configurar Node.js (Sin Caché Estricto)
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          # Eliminado por completo el 'cache: npm' para evitar el error de la captura
 
       - name: ☕ Configurar Java para Android
         uses: actions/setup-java@v3
@@ -37,36 +34,29 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 🛠️ Inicializar Entorno de la App Seleccionada
+      - name: 🛠️ Armar Estructura de la App en Caliente
         run: |
+          # 1. Crear entorno mínimo de ejecución en el aire
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # Creamos la carpeta de destino web
-          mkdir -p aethelos_web
+          # 2. Inicializar Capacitor apuntando ÚNICAMENTE a la carpeta elegida
+          npx cap init "${{ github.event.inputs.app_name }}" "com.aethelos.${{ github.event.inputs.project_folder }}" --web-dir=${{ github.event.inputs.project_folder }}
           
-          # Copiamos ÚNICAMENTE el contenido de la carpeta que elegiste en el formulario
-          cp -r ${{ github.event.inputs.project_folder }}/. aethelos_web/
-          
-          # Inicializamos usando las variables dinámicas que ingresaste
-          npx cap init "${{ github.event.inputs.app_name }}" "${{ github.event.inputs.app_id }}" --web-dir=aethelos_web
+          # 3. Crear el proyecto contenedor de Android
           npx cap add android
           npx cap sync android
 
-      - name: 🚀 Compilar APK Ligera (Gradle)
+      - name: 🚀 Compilar con Gradle
         working-directory: ./android
         run: ./gradlew assembleDebug
 
-      # El bot ahora renombra el APK usando el nombre dinámico que le diste
-      - name: 🏷️ Renombrar APK dinámicamente
+      - name: 🏷️ Renombrar APK al Nombre del Proyecto
         run: |
-          SAFE_NAME=$(echo "${{ github.event.inputs.app_name }}" | tr ' ' '-')
-          mv android/app/build/outputs/apk/debug/Aethelos-Cambio.apk android/app/build/outputs/apk/debug/$SAFE_NAME.apk
-          echo "FINAL_APK_NAME=$SAFE_NAME" >> $GITHUB_ENV
+          mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/${{ github.event.inputs.project_folder }}.apk
 
-      # El archivo .ZIP final llevará el nombre de la app elegida
-      - name: 📤 Exportar APK Lista para Instalar
+      - name: 📤 Exportar ZIP con el APK Limpio
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.inputs.app_name }}-Descarga
-          path: android/app/build/outputs/apk/debug/${{ env.FINAL_APK_NAME }}.apk
+          name: ${{ github.event.inputs.project_folder }}-APK-Descarga
+          path: android/app/build/outputs/apk/debug/${{ github.event.inputs.project_folder }}.apk
