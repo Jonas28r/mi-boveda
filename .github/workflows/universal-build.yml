@@ -30,11 +30,12 @@ jobs:
         with:
           node-version: 20
 
+      # --- AQUÍ ESTÁ LA CORRECCIÓN: CAMBIAMOS A JAVA 21 ---
       - name: ☕ Configurar Java para Android
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: 🛠️ Construir Entorno e Inyectar Código Puro
         run: |
@@ -53,7 +54,7 @@ jobs:
             exit 1
           fi
           
-          # SOLUCIÓN AL ERROR: Solo renombra si el nombre no es idéntico al destino
+          # Solo renombra si el nombre no es idéntico al destino
           if [ "$INDEX_FILE" != "$TARGET_FOLDER/index.html" ]; then
             mv "$INDEX_FILE" "$TARGET_FOLDER/index.html"
           fi
@@ -67,9 +68,6 @@ jobs:
           npx cap add android
           chmod +x android/gradlew
           npx cap sync android
-
-          # Mensaje de éxito para el log
-          echo "✅ Entorno web verificado y listo para compilar."
 
       - name: 🚀 Compilar APK con Gradle
         working-directory: ./android
