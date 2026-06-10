@@ -1,4 +1,4 @@
-name: Build Universal Aethelos (Ligero / Capacitor)
+name: Build Universal Aethelos (Ligero / Auto-Contenido)
 
 on:
   push:
@@ -11,48 +11,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clonar el Repositorio
+      - name: 📥 Clonar el Repositorio
         uses: actions/checkout@v4
 
-      # Necesitamos Node únicamente para que corra el comando de Capacitor
-      - name: Configurar Node.js
+      - name: ⚙️ Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Configurar Java para Android
+      - name: ☕ Configurar Java para Android
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # Instala las dependencias del motor de Capacitor de tu package.json
-      - name: Instalar Capacitor CLI
-        run: npm install
+      # Aquí es donde resolvemos el error de la captura creando todo en caliente
+      - name: 🛠️ Inicializar Entorno Móvil en el Aire
+        run: |
+          # 1. Crear un package.json genérico para que npm no llore
+          npm init -y
+          
+          # 2. Instalar Capacitor y el motor de Android directamente en el runner
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          
+          # 3. Aislar tus archivos web en una carpeta limpia para evitar bucles de peso
+          mkdir -p aethelos_web
+          find . -maxdepth 1 -not -name '.' -not -name '.git' -not -name '.github' -not -name 'node_modules' -not -name 'aethelos_web' -exec cp -r {} aethelos_web/ \;
+          
+          # 4. Configurar Capacitor apuntando a esa carpeta temporal
+          npx cap init "Aethelos Cambio" "com.aethelos.cambio" --web-dir=aethelos_web
+          
+          # 5. Generar la estructura nativa de Android limpia
+          npx cap add android
+          
+          # 6. Sincronizar los archivos
+          npx cap sync android
 
-      # Toma tu carpeta "www" con tus HTML/JS puros y los copia directo a la app de Android
-      - name: Sincronizar código puro con Android
-        run: npx cap sync android
-
-      # Compila el APK usando el motor nativo de Android (Gradle)
-      - name: Compilar APK Ligera
+      - name: 🚀 Compilar APK Ligera (Gradle)
         working-directory: ./android
         run: ./gradlew assembleDebug
 
-      # Cambia el nombre genérico por el sello de tu ecosistema
-      - name: Renombrar APK a Aethelos Cambio
+      - name: 🏷️ Renombrar APK a Aethelos Cambio
         run: mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Aethelos-Cambio.apk
 
-      # Te entrega el archivo .ZIP listo con tu APK renombrado adentro
-      - name: Exportar APK Lista para Instalar
+      - name: 📤 Exportar APK Lista para Instalar
         uses: actions/upload-artifact@v4
         with:
           name: Aethelos-Cambio-Descarga
           path: android/app/build/outputs/apk/debug/Aethelos-Cambio.apk
-
-      # Guarda una copia de respaldo de tu carpeta web por si la necesitas para tu tienda web
-      - name: Exportar Archivos Web Puros (PWA)
-        uses: actions/upload-artifact@v4
-        with:
-          name: aethelos-pwa-archivos
-          path: www/
