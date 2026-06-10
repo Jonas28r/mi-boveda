@@ -1,0 +1,55 @@
+name: Build Universal Aethelos (Ligero / Capacitor)
+
+on:
+  push:
+    branches:
+      - main  # Se ejecuta automáticamente al subir cambios a la rama main
+
+jobs:
+  build-ligero:
+    name: Build Web & Lightweight APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar el Repositorio
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: ☕ Configurar Java (Motor de Android)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: 📦 Instalar Dependencias
+        run: npm install
+
+      - name: 🏗️ Construir versión Web (PWA)
+        run: npm run build
+
+      - name: 🔄 Sincronizar código con Android (Capacitor)
+        run: npx cap sync android
+
+      - name: 🚀 Compilar APK Ligera
+        working-directory: ./android
+        run: ./gradlew assembleDebug
+
+      - name: 🏷️ Renombrar APK a Aethelos Cambio
+        run: mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Aethelos-Cambio.apk
+
+      - name: 📤 Exportar APK Lista para Instalar
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aethelos-Cambio-Descarga  # Nombre del archivo .ZIP que descargarás
+          path: android/app/build/outputs/apk/debug/Aethelos-Cambio.apk
+
+      - name: 🌐 Exportar Archivos Web (PWA)
+        uses: actions/upload-artifact@v4
+        with:
+          name: aethelos-pwa-archivos
+          path: dist/  # Asegúrate de que tu script de build guarde la web en 'dist' (como hace Vite)
