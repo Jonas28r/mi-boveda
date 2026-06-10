@@ -3,53 +3,56 @@ name: Build Universal Aethelos (Ligero / Capacitor)
 on:
   push:
     branches:
-      - main  # Se ejecuta automáticamente al subir cambios a la rama main
+      - main
 
 jobs:
   build-ligero:
-    name: Build Web & Lightweight APK
+    name: Build Pure Web & Lightweight APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Clonar el Repositorio
+      - name: Clonar el Repositorio
         uses: actions/checkout@v4
 
-      - name: ⚙️ Configurar Node.js
+      # Necesitamos Node únicamente para que corra el comando de Capacitor
+      - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
-      - name: ☕ Configurar Java (Motor de Android)
+      - name: Configurar Java para Android
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 📦 Instalar Dependencias
+      # Instala las dependencias del motor de Capacitor de tu package.json
+      - name: Instalar Capacitor CLI
         run: npm install
 
-      - name: 🏗️ Construir versión Web (PWA)
-        run: npm run build
-
-      - name: 🔄 Sincronizar código con Android (Capacitor)
+      # Toma tu carpeta "www" con tus HTML/JS puros y los copia directo a la app de Android
+      - name: Sincronizar código puro con Android
         run: npx cap sync android
 
-      - name: 🚀 Compilar APK Ligera
+      # Compila el APK usando el motor nativo de Android (Gradle)
+      - name: Compilar APK Ligera
         working-directory: ./android
         run: ./gradlew assembleDebug
 
-      - name: 🏷️ Renombrar APK a Aethelos Cambio
+      # Cambia el nombre genérico por el sello de tu ecosistema
+      - name: Renombrar APK a Aethelos Cambio
         run: mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Aethelos-Cambio.apk
 
-      - name: 📤 Exportar APK Lista para Instalar
+      # Te entrega el archivo .ZIP listo con tu APK renombrado adentro
+      - name: Exportar APK Lista para Instalar
         uses: actions/upload-artifact@v4
         with:
-          name: Aethelos-Cambio-Descarga  # Nombre del archivo .ZIP que descargarás
+          name: Aethelos-Cambio-Descarga
           path: android/app/build/outputs/apk/debug/Aethelos-Cambio.apk
 
-      - name: 🌐 Exportar Archivos Web (PWA)
+      # Guarda una copia de respaldo de tu carpeta web por si la necesitas para tu tienda web
+      - name: Exportar Archivos Web Puros (PWA)
         uses: actions/upload-artifact@v4
         with:
           name: aethelos-pwa-archivos
-          path: dist/  # Asegúrate de que tu script de build guarde la web en 'dist' (como hace Vite)
+          path: www/
