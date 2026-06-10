@@ -30,7 +30,6 @@ jobs:
         with:
           node-version: 20
 
-      # --- AQUÍ ESTÁ LA CORRECCIÓN: CAMBIAMOS A JAVA 21 ---
       - name: ☕ Configurar Java para Android
         uses: actions/setup-java@v3
         with:
@@ -39,7 +38,7 @@ jobs:
 
       - name: 🛠️ Construir Entorno e Inyectar Código Puro
         run: |
-          # 1. Detectar la carpeta real ignorando mayúsculas/minúsculas
+          # 1. Detectar la carpeta real
           TARGET_FOLDER=$(find . -maxdepth 1 -iname "${{ github.event.inputs.project_folder }}" -type d | head -n 1 | sed 's|^\./||')
           
           if [ -z "$TARGET_FOLDER" ]; then
@@ -47,27 +46,39 @@ jobs:
             exit 1
           fi
           
-          # 2. Verificar el index.html de forma segura
+          # 2. Verificar el index.html
           INDEX_FILE=$(find "$TARGET_FOLDER" -maxdepth 1 -iname "index.html" -type f | head -n 1)
           if [ -z "$INDEX_FILE" ]; then
             echo "❌ ERROR: No hay ningún archivo index.html dentro de la carpeta '$TARGET_FOLDER'."
             exit 1
           fi
           
-          # Solo renombra si el nombre no es idéntico al destino
           if [ "$INDEX_FILE" != "$TARGET_FOLDER/index.html" ]; then
             mv "$INDEX_FILE" "$TARGET_FOLDER/index.html"
           fi
 
-          # 3. Inicializar herramientas nativas
+          # 3. Inicializar Capacitor
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # 4. Vincular el proyecto
           npx cap init "${{ github.event.inputs.app_name }}" "${{ github.event.inputs.app_id }}" --web-dir="$TARGET_FOLDER"
           npx cap add android
           chmod +x android/gradlew
           npx cap sync android
+
+          # 4. PARCHE ANTI-BUCLE: Forzar una única versión de Kotlin para evitar duplicados
+          cat << 'EOF' >> android/build.gradle
+
+          allprojects {
+              configurations.all {
+                  resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                      if (details.requested.group == 'org.jetbrains.kotlin') {
+                          details.useVersion '1.9.22'
+                      }
+                  }
+              }
+          }
+          EOF
 
       - name: 🚀 Compilar APK con Gradle
         working-directory: ./android
