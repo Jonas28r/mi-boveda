@@ -1,0 +1,22 @@
+{
+  "name": "Aethelos Cambio",
+  "short_name": "Aethelos",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0b0b0f",
+  "theme_color": "#0b0b0f",
+  "orientation": "portrait",
+  "description": "Crypto + Forex en tiempo real",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
