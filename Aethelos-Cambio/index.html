@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aethelos Cambio</title>
+
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#0b0b0f"/>
+
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="status">
+    <span id="dot" class="dot online"></span>
+    <h1>AETHELOS <span>CAMBIO</span></h1>
+  </div>
+
+  <span id="offline" class="offline hidden">OFFLINE</span>
+</header>
+
+<main class="container">
+
+  <section class="card">
+    <p class="label">Tú tienes</p>
+
+    <div class="row">
+      <input id="amount" type="number" value="100"/>
+
+      <select id="from">
+        <option>USD</option>
+        <option>USDT</option>
+        <option>EUR</option>
+        <option>BS</option>
+        <option>COP</option>
+        <option>BTC</option>
+      </select>
+    </div>
+  </section>
+
+  <button id="swap" class="swap">⇅</button>
+
+  <section class="card">
+    <p class="label">Recibes</p>
+
+    <div class="row">
+      <div id="result" class="result">0.00</div>
+
+      <select id="to">
+        <option>BS</option>
+        <option>USD</option>
+        <option>USDT</option>
+        <option>EUR</option>
+        <option>COP</option>
+        <option>BTC</option>
+      </select>
+    </div>
+  </section>
+
+  <section class="info">
+    <div>
+      <span>Tasa:</span>
+      <span id="rate">--</span>
+    </div>
+
+    <div>
+      <span>Comisión:</span>
+      <span id="fee">--</span>
+    </div>
+
+    <div>
+      <span>Actualizado:</span>
+      <span id="time">--</span>
+    </div>
+  </section>
+
+  <div id="banner-ad" class="ad-banner hidden"></div>
+
+</main>
+
+<footer class="footer">
+  <small>© Aethelos Cambio</small>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
